@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events, EmbedBuilder } from 'discord.js';
 import { logger } from '../utils/logger.js';
 import { getLevelingConfig, getUserLevelData } from '../services/leveling/leveling.js';
 import { addXp } from '../services/leveling/xpSystem.js';
@@ -27,6 +27,42 @@ export default {
   async execute(message, client) {
     try {
       if (message.author.bot || !message.guild) return;
+            if (message.content.toLowerCase().startsWith('+w')) {
+        const args = message.content.trim().split(/\s+/);
+        const targetMember =
+          message.mentions.members.first() ||
+          message.guild.members.cache.get(args[1]) ||
+          message.member;
+
+        const user = targetMember.user;
+        const roles = targetMember.roles.cache
+          .filter((r) => r.id !== message.guild.id)
+          .sort((a, b) => b.position - a.position)
+          .map((r) => r.toString());
+
+        const joinedTs = Math.floor(targetMember.joinedTimestamp / 1000);
+        const createdTs = Math.floor(user.createdTimestamp / 1000);
+
+        const embed = new EmbedBuilder()
+          .setColor(targetMember.displayHexColor !== '#000000' ? targetMember.displayHexColor : '#5865F2')
+          .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) })
+          .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 256 }))
+          .setDescription(`${targetMember}`)
+          .addFields(
+            { name: 'Joined Server', value: `<t:${joinedTs}:R>\n(<t:${joinedTs}:D>)`, inline: true },
+            { name: 'Account Created', value: `<t:${createdTs}:R>\n(<t:${createdTs}:D>)`, inline: true },
+            {
+              name: `Roles [${roles.length}]`,
+              value: roles.length > 0 ? roles.slice(0, 15).join(' ') : 'None',
+              inline: false,
+            }
+          )
+          .setFooter({ text: `ID: ${user.id}` })
+          .setTimestamp();
+
+        return await message.reply({ embeds: [embed] });
+      }
+
 
       logger.debug(`Message received from ${message.author.tag}: ${message.content}`);
 
